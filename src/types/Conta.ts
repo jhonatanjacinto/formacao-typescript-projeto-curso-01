@@ -54,7 +54,7 @@ const Conta = {
      * Retorna todas as transações registradas na conta.
      */
     getTransacoes(): Transacao[] {
-        return transacoes.map(transacao => ({ ...transacao }));
+        return structuredClone(transacoes);
     },
 
     /**

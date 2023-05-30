@@ -45,7 +45,7 @@ const Conta = {
      * Retorna todas as transações registradas na conta.
      */
     getTransacoes() {
-        return transacoes.map(transacao => ({ ...transacao }));
+        return structuredClone(transacoes);
     },
     /**
      * Registra uma nova transação na conta.
