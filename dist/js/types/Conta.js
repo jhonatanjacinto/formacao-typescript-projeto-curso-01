@@ -6,60 +6,61 @@ const transacoes = JSON.parse(localStorage.getItem("transacoes"), (key, value) =
     }
     return value;
 }) || [];
-/**
- * Deposita um valor na conta e registra o novo saldo
- * @param valor            Valor a ser depositado.
- */
-function depositar(valor) {
-    if (valor <= 0) {
-        throw new Error("O valor a ser depositado deve ser maior que zero!");
-    }
-    saldo += valor;
-    localStorage.setItem("saldo", JSON.stringify(saldo));
-}
-/**
- * Debita um valor da conta e registra o novo saldo
- * @param valor            Valor a ser debitado.
- **/
 function debitar(valor) {
     if (valor <= 0) {
         throw new Error("O valor a ser debitado deve ser maior que zero!");
     }
     if (valor > saldo) {
-        throw new Error("Seu saldo é insuficiente para realizar a operação!");
+        throw new Error("Saldo insuficiente!");
     }
     saldo -= valor;
-    localStorage.setItem("saldo", JSON.stringify(saldo));
+    localStorage.setItem("saldo", saldo.toString());
 }
-/**
- * Objeto que representa a conta bancária do usuário na aplicação e que exporta suas funcionalidades para uso externo.
- */
+function depositar(valor) {
+    if (valor <= 0) {
+        throw new Error("O valor a ser depositado deve ser maior que zero!");
+    }
+    saldo += valor;
+    localStorage.setItem("saldo", saldo.toString());
+}
 const Conta = {
-    /**
-     * Retorna o saldo atual da conta.
-     */
     getSaldo() {
         return saldo;
     },
-    /**
-     * Retorna todas as transações registradas na conta.
-     */
-    getTransacoes() {
-        return structuredClone(transacoes);
+    getDataAcesso() {
+        return new Date();
     },
-    /**
-     * Registra uma nova transação na conta.
-     * @param transacao             Transação a ser registrada.
-     */
-    registrarTransacao(transacao) {
-        if (transacao.tipo === TipoTransacao.DEPOSITO) {
-            depositar(transacao.valor);
+    getGruposTransacoes() {
+        const gruposTransacoes = [];
+        const listaTransacoes = structuredClone(transacoes);
+        const transacoesOrdenadas = listaTransacoes.sort((t1, t2) => t2.data.getTime() - t1.data.getTime());
+        let labelAtualGrupoTransacao = "";
+        for (let transacao of transacoesOrdenadas) {
+            let labelGrupoTransacao = transacao.data.toLocaleDateString("pt-br", { month: "long", year: "numeric" });
+            if (labelAtualGrupoTransacao !== labelGrupoTransacao) {
+                labelAtualGrupoTransacao = labelGrupoTransacao;
+                gruposTransacoes.push({
+                    label: labelGrupoTransacao,
+                    transacoes: []
+                });
+            }
+            gruposTransacoes.at(-1).transacoes.push(transacao);
+        }
+        return gruposTransacoes;
+    },
+    registrarTransacao(novaTransacao) {
+        if (novaTransacao.tipoTransacao == TipoTransacao.DEPOSITO) {
+            depositar(novaTransacao.valor);
+        }
+        else if (novaTransacao.tipoTransacao == TipoTransacao.TRANSFERENCIA || novaTransacao.tipoTransacao == TipoTransacao.PAGAMENTO_BOLETO) {
+            debitar(novaTransacao.valor);
+            novaTransacao.valor *= -1;
         }
         else {
-            debitar(transacao.valor);
-            transacao.valor *= -1;
+            throw new Error("Tipo de Transação é inválido!");
         }
-        transacoes.push(transacao);
+        transacoes.push(novaTransacao);
+        console.log(this.getGruposTransacoes());
         localStorage.setItem("transacoes", JSON.stringify(transacoes));
     }
 };
